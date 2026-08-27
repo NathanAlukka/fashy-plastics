@@ -1,0 +1,17 @@
+<div class="compact-heading"><h1>Powder</h1><span>{{isHead?'Assigned':'To Fill'}}</span></div>
+@if(message){<div class="success-banner"><mat-icon>✓</mat-icon>{{message}}</div>}
+@if(!isHead&&!scheduleExists){<div class="empty-state">No schedule has been created for this date.</div>}
+<section class="raw-entry">
+  <mat-form-field class="date-field" subscriptSizing="dynamic"><mat-label>Date</mat-label><input matInput type="date" [(ngModel)]="date" (change)="dateChanged()"></mat-form-field>
+  @if(isHead){<div class="view-tabs"><button type="button" [class.active]="activeView==='schedule'" (click)="setView('schedule')">Schedule</button><button type="button" [class.active]="activeView==='result'" (click)="setView('result')">Result</button></div>}
+  <div class="fixed-table-wrap"><table class="entry-table" [class.schedule-table]="activeView==='schedule'"><thead><tr><th>Company</th><th>Type</th><th>Grade</th>@if(activeView==='result'){@for(g of data.galas;track g){<th>{{g}}</th>}}<th></th></tr></thead><tbody>
+    @for(row of rows;track row.id){<tr>
+      <td><app-searchable-select [(ngModel)]="row.company" [options]="data.powderCompanies" placeholder="Company" panelWidth="230px" [disabled]="assignmentLocked(row)" required/></td>
+      <td><app-searchable-select [(ngModel)]="row.type" [options]="data.powderTypes" placeholder="Type" panelWidth="220px" [disabled]="assignmentLocked(row)" required/></td>
+      <td><app-searchable-select [(ngModel)]="row.grade" [options]="data.powderGrades" placeholder="Grade" panelWidth="220px" [disabled]="assignmentLocked(row)" required/></td>
+      @if(activeView==='result'){@for(g of row.galas;track $index){<td><mat-form-field subscriptSizing="dynamic"><input matInput type="number" min="0" placeholder="—" [(ngModel)]="row.galas[$index]" [readonly]="isHead"></mat-form-field></td>}}
+      <td>@if((isHead&&activeView==='schedule')||workerAddedIds.has(row.id)){<button mat-icon-button class="danger delete-row" (click)="remove(row.id)" [disabled]="isHead&&rows.length===1"><mat-icon>×</mat-icon></button>}</td>
+    </tr>}
+  </tbody></table></div>
+  @if(!isHead||activeView==='schedule'){<div class="raw-actions"><button mat-stroked-button (click)="add()"><mat-icon>+</mat-icon>Add Row</button><button mat-flat-button (click)="save()" [disabled]="!valid()||cloud.loading()"><mat-icon>✓</mat-icon>{{cloud.loading()?'Saving…':(isHead?'Save Schedule':'Save Work')}}</button></div>}
+</section>

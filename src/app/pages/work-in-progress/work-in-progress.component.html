@@ -1,0 +1,85 @@
+<div class="work-heading"><h1>{{isHead?'Work Schedule':'Daily Work'}}</h1><span>{{isHead?'Assigned':'To Fill'}}</span></div>
+
+@if(message){<div class="success-banner"><mat-icon>✓</mat-icon>{{message}}</div>}
+
+<mat-card class="work-card">
+  <mat-card-content>
+    <mat-form-field class="date-field" subscriptSizing="dynamic">
+      <mat-label>Work date</mat-label>
+      <input matInput type="date" [(ngModel)]="date" (change)="dateChanged()" required>
+    </mat-form-field>
+    @if(isHead){<div class="view-tabs"><button type="button" [class.active]="activeView==='schedule'" (click)="setView('schedule')">Schedule</button><button type="button" [class.active]="activeView==='result'" (click)="setView('result')">Result</button></div>}
+
+    <div class="work-table-wrap">
+      <table class="work-table" [class.schedule-table]="activeView==='schedule'">
+        <thead>
+          <tr>
+            <th class="index-column">#</th>
+            <th>Gala</th>
+            <th>Worker</th>
+            <th>Part</th>
+            <th>Task</th>
+            @if(activeView==='result'){<th>Qty</th><th>Unit</th>}
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for(row of rows;track row.id;let rowNumber=$index){
+            <tr>
+              <td class="index-column"><span class="row-number">{{rowNumber+1}}</span></td>
+              <td>
+                <app-searchable-select [(ngModel)]="row.galaNumber" [options]="galaNumbers" placeholder="Gala" panelWidth="150px" [disabled]="assignmentLocked(row)" required/>
+              </td>
+              <td>
+                <app-searchable-select [(ngModel)]="row.worker" [options]="workerOptions" placeholder="Worker" panelWidth="280px" [disabled]="assignmentLocked(row)" required/>
+              </td>
+              <td>
+                <app-searchable-select [(ngModel)]="row.part" [options]="partOptions" placeholder="Part" panelWidth="290px" [disabled]="assignmentLocked(row)" (selectionChange)="partChanged(row)" required/>
+              </td>
+              <td>
+                @if(row.part==='Duty'&&row.task==='Other'){
+                  <mat-form-field subscriptSizing="dynamic">
+                    <input matInput [(ngModel)]="row.customDuty" placeholder="Type duty" [readonly]="assignmentLocked(row)" required autofocus>
+                  </mat-form-field>
+                }@else{
+                <app-searchable-select [(ngModel)]="row.task" [options]="tasksFor(row)" placeholder="Task" panelWidth="270px" [disabled]="taskDisabled(row)||assignmentLocked(row)" (selectionChange)="taskChanged(row)" required/>
+                }
+              </td>
+              @if(activeView==='result'){<td>
+                <mat-form-field class="quantity-field" subscriptSizing="dynamic">
+                  <input matInput type="number" min="1" placeholder="—" [(ngModel)]="row.quantity" [disabled]="hasNoQuantity(row)" [readonly]="isHead" required>
+                </mat-form-field>
+              </td>
+              <td>
+                <app-searchable-select class="unit-field" [(ngModel)]="row.unit" [options]="data.wipUnits" placeholder="—" panelWidth="170px" [disabled]="hasNoQuantity(row)||isHead" required/>
+              </td>}
+              <td>@if(isHead||workerAddedIds.has(row.id)){<button mat-icon-button class="danger" aria-label="Delete row" (click)="removeRow(row.id)"><mat-icon>×</mat-icon></button>}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if(!isHead||activeView==='schedule'){<button mat-stroked-button class="add-row" (click)="addRow()"><mat-icon>+</mat-icon>Add Row</button>}
+    @if(!isHead||activeView==='schedule'){<button mat-flat-button class="save-record" (click)="save()" [disabled]="!valid()||cloud.loading()"><mat-icon>✓</mat-icon>{{cloud.loading()?'Saving…':(isHead?'Save Schedule':'Save Work')}}</button>}
+  </mat-card-content>
+</mat-card>
+
+@if(!isHead&&!scheduleExists){<div class="empty-state">No published schedule is available for this date. You can still add an unplanned row after the Head publishes the day.</div>}
+<!--<mat-card class="records-card">
+  <mat-card-header><mat-card-title>Saved worker entries</mat-card-title></mat-card-header>
+  <mat-card-content>
+    @if(!saved.length){<div class="empty-state">No worker entries saved yet.</div>}
+    @else{
+      <div class="saved-list">
+        @for(row of saved;track row.id){
+          <div class="saved-row">
+            <div><strong>Gala {{row.galaNumber||'—'}} · {{row.worker}}</strong><span>{{row.date}} · {{row.part}}{{row.task?' · '+(row.task==='Other'?(row.customDuty||'Other'):row.task):''}}</span></div>
+            @if(row.quantity!==null){<b>{{row.quantity}} {{row.unit}}</b>}
+            <button mat-icon-button class="danger" (click)="deleteSaved(row.id)"><mat-icon>×</mat-icon></button>
+          </div>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>-->

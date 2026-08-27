@@ -1,0 +1,11 @@
+<mat-form-field subscriptSizing="dynamic">
+  @if(label){<mat-label>{{label}}</mat-label>}
+  <mat-select [value]="value" [placeholder]="placeholder" [disabled]="isDisabled" [panelWidth]="panelWidth" (selectionChange)="selected($event.value)" (openedChange)="opened($event)">
+    <div class="search-box" (mousedown)="keepOpen($event)" (click)="keepOpen($event)" (keydown)="searchKeydown($event)">
+      <span class="search-icon">⌕</span>
+      <input #searchInput [(ngModel)]="query" [ngModelOptions]="{standalone:true}" placeholder="Type to search…" autocomplete="off" aria-label="Search options">
+    </div>
+    @for(option of filteredOptions;track option){<mat-option [value]="option">{{option}}</mat-option>}
+    @if(!filteredOptions.length){<div class="no-results">No results found</div>}
+  </mat-select>
+</mat-form-field>

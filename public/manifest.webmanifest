@@ -1,0 +1,32 @@
+{
+  "name": "Fashy Plastics",
+  "short_name": "Fashy",
+  "description": "Manufacturing production management",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f8",
+  "theme_color": "#164e63",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {"name": "Work", "short_name": "Work", "url": "/work-in-progress"},
+    {"name": "Raw Material", "short_name": "Raw", "url": "/raw-material"},
+    {"name": "Daily Output", "short_name": "Output", "url": "/daily-production"},
+    {"name": "Incoming Material", "short_name": "Incoming", "url": "/incoming-material"}
+  ]
+}

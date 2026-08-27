@@ -1,0 +1,288 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function currentProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isActiveHead() {
+      return signedIn()
+        && currentProfile().active == true
+        && currentProfile().role == 'head';
+    }
+
+    // Part 1 health check: only a deliberately public, non-sensitive document.
+    match /system_health/angular-client {
+      allow read: if resource.data.public == true;
+      allow write: if false;
+    }
+
+    // Users read themselves. The active Head provisions and deactivates Workers.
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || isActiveHead());
+      allow create: if isActiveHead()
+        && request.resource.data.uid == userId
+        && request.resource.data.role == 'worker'
+        && request.resource.data.active == true;
+      allow update: if isActiveHead()
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email;
+      allow delete: if false;
+    }
+
+    // Shared dropdown/master lists. All active users may read; only Head writes.
+    match /master_data/{documentId} {
+      allow read: if documentId == 'workers'
+        || (signedIn() && currentProfile().active == true);
+      allow create, update, delete: if isActiveHead();
+    }
+
+    // Head owns the schedule lifecycle. Workers only discover published days.
+    match /daily_records/{recordDate} {
+      allow read: if isActiveHead()
+        || (signedIn()
+          && currentProfile().active == true
+          && resource.data.status in ['published', 'completed']);
+      allow create, update, delete: if isActiveHead();
+
+      match /work_entries/{entryId} {
+        function parentPublished() {
+          return get(/databases/$(database)/documents/daily_records/$(recordDate)).data.status == 'published';
+        }
+
+        allow read: if isActiveHead()
+          || (signedIn() && currentProfile().active == true && parentPublished())
+          || (signedIn() && currentProfile().active == true
+            && get(/databases/$(database)/documents/daily_records/$(recordDate)).data.status == 'completed');
+
+        allow create: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && request.resource.data.source == 'worker'
+            && request.resource.data.createdBy == request.auth.uid);
+
+        allow update: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['quantity', 'unit', 'updatedAt', 'submittedBy', 'submittedByName'])
+            && request.resource.data.submittedBy == request.auth.uid)
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && resource.data.source == 'worker'
+            && resource.data.createdBy == request.auth.uid
+            && request.resource.data.source == 'worker'
+            && request.resource.data.createdBy == request.auth.uid);
+
+        allow delete: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && resource.data.source == 'worker'
+            && resource.data.createdBy == request.auth.uid);
+      }
+
+      match /raw_entries/{entryId} {
+        function parentPublished() {
+          return get(/databases/$(database)/documents/daily_records/$(recordDate)).data.status == 'published';
+        }
+
+        function validGalas() {
+          return request.resource.data.galas is list
+            && request.resource.data.galas.size() == 6
+            && (request.resource.data.galas[0] == null || request.resource.data.galas[0] is number)
+            && (request.resource.data.galas[1] == null || request.resource.data.galas[1] is number)
+            && (request.resource.data.galas[2] == null || request.resource.data.galas[2] is number)
+            && (request.resource.data.galas[3] == null || request.resource.data.galas[3] is number)
+            && (request.resource.data.galas[4] == null || request.resource.data.galas[4] is number)
+            && (request.resource.data.galas[5] == null || request.resource.data.galas[5] is number);
+        }
+
+        allow read: if isActiveHead()
+          || (signedIn() && currentProfile().active == true && parentPublished())
+          || (signedIn() && currentProfile().active == true
+            && get(/databases/$(database)/documents/daily_records/$(recordDate)).data.status == 'completed');
+
+        allow create: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && request.resource.data.source == 'worker'
+            && request.resource.data.createdBy == request.auth.uid
+            && request.resource.data.company is string
+            && request.resource.data.type is string
+            && request.resource.data.grade is string
+            && validGalas());
+
+        allow update: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['galas', 'updatedAt', 'submittedBy', 'submittedByName'])
+            && request.resource.data.submittedBy == request.auth.uid
+            && validGalas())
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && resource.data.source == 'worker'
+            && resource.data.createdBy == request.auth.uid
+            && request.resource.data.source == 'worker'
+            && request.resource.data.createdBy == request.auth.uid
+            && request.resource.data.company is string
+            && request.resource.data.type is string
+            && request.resource.data.grade is string
+            && validGalas());
+
+        allow delete: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && resource.data.source == 'worker'
+            && resource.data.createdBy == request.auth.uid);
+      }
+
+      match /output_cycles/{cycleId} {
+        function parentPublished() {
+          return get(/databases/$(database)/documents/daily_records/$(recordDate)).data.status == 'published';
+        }
+
+        function sixValues(value) {
+          return value is list && value.size() == 6;
+        }
+
+        function validCycle() {
+          return sixValues(request.resource.data.galaProducts)
+            && sixValues(request.resource.data.workers)
+            && sixValues(request.resource.data.rawGrades)
+            && sixValues(request.resource.data.rawTypes)
+            && sixValues(request.resource.data.sessions)
+            && sixValues(request.resource.data.sessionNumbers)
+            && sixValues(request.resource.data.requiredQuantities)
+            && sixValues(request.resource.data.plannedLots)
+            && sixValues(request.resource.data.counted)
+            && sixValues(request.resource.data.actual);
+        }
+
+        allow read: if isActiveHead()
+          || (signedIn() && currentProfile().active == true && parentPublished())
+          || (signedIn() && currentProfile().active == true
+            && get(/databases/$(database)/documents/daily_records/$(recordDate)).data.status == 'completed');
+
+        allow create: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && request.resource.data.source == 'worker'
+            && request.resource.data.createdBy == request.auth.uid
+            && validCycle());
+
+        allow update: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && resource.data.source == 'head'
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['counted', 'actual', 'updatedAt', 'submittedBy', 'submittedByName'])
+            && request.resource.data.submittedBy == request.auth.uid
+            && validCycle())
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && resource.data.source == 'worker'
+            && resource.data.createdBy == request.auth.uid
+            && request.resource.data.source == 'worker'
+            && request.resource.data.createdBy == request.auth.uid
+            && validCycle());
+
+        allow delete: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && resource.data.source == 'worker'
+            && resource.data.createdBy == request.auth.uid);
+      }
+
+      match /incoming_entries/{entryId} {
+        function parentPublished() {
+          return get(/databases/$(database)/documents/daily_records/$(recordDate)).data.status == 'published';
+        }
+
+        function validEntry() {
+          return request.resource.data.materialType is string
+            && request.resource.data.material is string
+            && request.resource.data.quantity is number
+            && request.resource.data.quantity >= 0
+            && request.resource.data.unit is string;
+        }
+
+        allow read: if isActiveHead()
+          || (signedIn() && currentProfile().active == true && parentPublished())
+          || (signedIn() && currentProfile().active == true
+            && get(/databases/$(database)/documents/daily_records/$(recordDate)).data.status == 'completed');
+
+        allow create: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && request.resource.data.source == 'worker'
+            && request.resource.data.createdBy == request.auth.uid
+            && validEntry());
+
+        allow update: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && resource.data.source == 'head'
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['quantity', 'unit', 'updatedAt', 'submittedBy', 'submittedByName'])
+            && request.resource.data.submittedBy == request.auth.uid
+            && validEntry())
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && resource.data.source == 'worker'
+            && resource.data.createdBy == request.auth.uid
+            && request.resource.data.source == 'worker'
+            && request.resource.data.createdBy == request.auth.uid
+            && validEntry());
+
+        allow delete: if isActiveHead()
+          || (signedIn()
+            && currentProfile().active == true
+            && currentProfile().role == 'worker'
+            && parentPublished()
+            && resource.data.source == 'worker'
+            && resource.data.createdBy == request.auth.uid);
+      }
+    }
+
+    // All operational collections are explicitly covered above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

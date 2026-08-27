@@ -1,0 +1,11 @@
+<div class="status-heading"><div><h1>Backend Status</h1><p>Part 9 · Shared dashboard</p></div><span [class.connected]="connection.state()==='connected'">{{connection.state()}}</span></div>
+<section class="status-card">
+  <div class="status-icon"><mat-icon>{{connection.state()==='connected'?'✓':'☁'}}</mat-icon></div>
+  <h2>Cloud Firestore connection</h2>
+  <p>{{connection.detail()}}</p>
+  <button mat-flat-button (click)="connection.check()" [disabled]="connection.state()==='checking'||connection.state()==='not-configured'">
+    {{connection.state()==='checking'?'Checking…':'Check connection'}}
+  </button>
+</section>
+<section class="safety-card"><strong>Current data source</strong><p>Daily rosters, dashboard summaries, Work, Raw Material, Output and Incoming Material use Firebase when configured. LocalStorage is retained only as a fallback and same-device cache.</p></section>
+<section class="status-card"><div class="status-icon"><mat-icon>{{master.state()==='cloud'?'✓':'≡'}}</mat-icon></div><h2>Shared master data</h2><p>{{master.message()}}</p><button mat-stroked-button (click)="master.load()" [disabled]="!auth.user()||master.state()==='loading'||master.state()==='saving'">Reload master data</button>@if(auth.profile()?.role==='head'){<button class="seed-button" mat-flat-button (click)="master.seedDefaults()" [disabled]="master.state()==='loading'||master.state()==='saving'">{{master.state()==='saving'?'Uploading…':'Upload built-in lists'}}</button>}</section>

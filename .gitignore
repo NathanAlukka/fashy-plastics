@@ -1,0 +1,9 @@
+/node_modules
+/dist
+/out-tsc
+/.angular
+/.idea
+/.vscode
+.DS_Store
+npm-debug.log*
+/setup/firebase-users.local.csv
