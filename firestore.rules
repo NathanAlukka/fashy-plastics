@@ -21,9 +21,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Users read themselves. The active Head provisions and deactivates Workers.
+    // Users read themselves. Active users can list active profiles for worker-name
+    // dropdowns; the active Head can also list inactive profiles for management.
     match /users/{userId} {
-      allow read: if signedIn() && (request.auth.uid == userId || isActiveHead());
+      allow get: if signedIn() && (request.auth.uid == userId || isActiveHead());
+      allow list: if isActiveHead()
+        || (signedIn() && currentProfile().active == true && resource.data.active == true);
       allow create: if isActiveHead()
         && request.resource.data.uid == userId
         && request.resource.data.role == 'worker'

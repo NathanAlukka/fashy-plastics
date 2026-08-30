@@ -11,15 +11,16 @@ import{DailyRecordService}from'../../services/daily-record.service';
 import{MockDataService}from'../../services/mock-data.service';
 import{OutputRecordService}from'../../services/output-record.service';
 import{SearchableSelectComponent}from'../../shared/searchable-select/searchable-select.component';
+import{WorkerDirectoryService}from'../../services/worker-directory.service';
 
 @Component({standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatIconModule,MatInputModule,SearchableSelectComponent],templateUrl:'./daily-production.component.html',styleUrl:'./daily-production.component.scss'})
 export class DailyProductionComponent{
 date:string;sections:ProductionSection[]=[];message='';activeView:'schedule'|'result'='schedule';readonly workerAddedIds=new Set<string>();readonly sessionOptions=['Day','Night'];
-constructor(public data:MockDataService,public state:AppStateService,public auth:AuthService,public daily:DailyRecordService,public cloud:OutputRecordService){this.date=state.selectedDate();this.activeView=this.isHead?'schedule':'result';void this.load()}
+constructor(public data:MockDataService,public state:AppStateService,public auth:AuthService,public daily:DailyRecordService,public cloud:OutputRecordService,public workerDirectory:WorkerDirectoryService){this.date=state.selectedDate();this.activeView=this.isHead?'schedule':'result';void this.workerDirectory.load();void this.load()}
 get isHead():boolean{return this.state.mode()==='head'}
 get scheduleExists():boolean{return this.auth.enabled?['published','completed'].includes(this.daily.record()?.status??''):!!this.state.schedule()?.createdByHead}
 get outputParts():string[]{return this.data.parts}
-get workerOptions():string[]{const roster=this.daily.record()?.managedWorkers??[];return roster.length?roster:this.data.workers}
+get workerOptions():string[]{return this.workerDirectory.names().length?this.workerDirectory.names():this.data.workers}
 async load():Promise<void>{
   this.workerAddedIds.clear();
   if(this.auth.enabled){
