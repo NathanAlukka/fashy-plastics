@@ -9,4 +9,5 @@ export const routes:Routes=[
 {path:'backend-status',loadComponent:()=>import('./pages/backend-status/backend-status.component').then(module=>module.BackendStatusComponent),title:'Backend Status | Fashy Plastics'},
 {path:'manage-employees',loadComponent:()=>import('./pages/manage-employees/manage-employees.component').then(module=>module.ManageEmployeesComponent),canActivate:[authGuard,headGuard],title:'Manage Employees | Fashy Plastics'},
 {path:'change-pin',loadComponent:()=>import('./pages/change-pin/change-pin.component').then(module=>module.ChangePinComponent),canActivate:[authGuard],title:'Change My PIN | Fashy Plastics'},
+{path:'activity-log',loadComponent:()=>import('./pages/activity-log/activity-log.component').then(module=>module.ActivityLogComponent),canActivate:[authGuard,headGuard],title:'Activity Log | Fashy Plastics'},
 {path:'',pathMatch:'full',redirectTo:'login'},{path:'**',redirectTo:'login'}];

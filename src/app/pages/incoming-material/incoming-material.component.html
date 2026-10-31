@@ -1,22 +1,22 @@
-<div class="page-header"><div><h1>Incoming Material</h1><p>{{isHead?'Prepare expected deliveries':'Confirm or add deliveries'}}</p></div></div>
-@if(message){<div class="success-banner"><mat-icon>✓</mat-icon>{{message}}</div>}@if(!isHead&&!scheduleExists){<div class="empty-state">No Head schedule exists. Unexpected deliveries can still be added.</div>}
-<mat-card class="form-card"><mat-card-content>
+<div class="page-header"><div><h1>Incoming Material</h1><p>{{isHead?'Prepare expected deliveries':access.isController?'Correct delivery results':'View expected deliveries'}}</p></div></div>
+@if(message){<div class="success-banner"><mat-icon>✓</mat-icon>{{message}}</div>}@if(!isHead&&!scheduleExists){<div class="empty-state">No published Head schedule is available.</div>}
+@if(isDayOff){<div class="day-off-banner"><strong>Factory Day Off</strong><span>No Incoming Material schedule is active for this date.</span></div>}@else{<mat-card class="form-card"><mat-card-content>
   <mat-form-field class="incoming-date" subscriptSizing="dynamic"><mat-label>Date</mat-label><input matInput type="date" [(ngModel)]="draft.date" (change)="dateChanged()"></mat-form-field>
   @if(isHead){<div class="view-tabs"><button type="button" [class.active]="activeView==='schedule'" (click)="setView('schedule')">Schedule</button><button type="button" [class.active]="activeView==='result'" (click)="setView('result')">Result</button></div>}
-  <div class="incoming-row" [class.schedule-row]="activeView==='schedule'">
-    <app-searchable-select [(ngModel)]="draft.materialType" [options]="data.materialTypes" placeholder="Type" panelWidth="230px" [disabled]="activeView==='result'&&isHead||draftAssignmentLocked"/>
-    <app-searchable-select [(ngModel)]="draft.material" [options]="materials()" placeholder="Material" panelWidth="270px" [disabled]="activeView==='result'&&isHead||draftAssignmentLocked"/>
+  <div class="incoming-row" [class.schedule-row]="activeView==='schedule'" [class.worker-readonly]="draftAssignmentLocked">
+    <app-searchable-select [(ngModel)]="draft.materialType" [options]="data.materialTypes" placeholder="Type" panelWidth="230px" [disabled]="!isHead||activeView==='result'"/>
+    <app-searchable-select [(ngModel)]="draft.material" [options]="materials()" placeholder="Material" panelWidth="270px" [disabled]="!isHead||activeView==='result'"/>
     @if(activeView==='result'){
-      <mat-form-field subscriptSizing="dynamic"><input matInput type="number" min="1" placeholder="Qty" [(ngModel)]="draft.quantity" [readonly]="isHead"></mat-form-field>
-      <app-searchable-select [(ngModel)]="draft.unit" [options]="data.incomingUnits" placeholder="Unit" panelWidth="190px" [disabled]="isHead"/>
+      <mat-form-field subscriptSizing="dynamic"><input matInput type="number" min="1" placeholder="Qty" [(ngModel)]="draft.quantity" [readonly]="!canEditResults"></mat-form-field>
+      <app-searchable-select [(ngModel)]="draft.unit" [options]="data.incomingUnits" placeholder="Unit" panelWidth="190px" [disabled]="!canEditResults"/>
     }
   </div>
-  @if(!isHead||activeView==='schedule'){<div class="card-actions" [class.edit-actions]="editingId"><button mat-flat-button (click)="add()" [disabled]="!validDraft()"><mat-icon>{{editingId?'✓':'+'}}</mat-icon>{{editingId?'Update Row':'Add material'}}</button>@if(editingId&&canDeleteEditing){<button mat-stroked-button class="danger" (click)="deleteEditing()">Delete Row</button>}@if(editingId){<button mat-stroked-button (click)="cancelEdit()">Cancel</button>}</div>}
+  @if(isHead&&activeView==='schedule'||canEditResults&&editingId){<div class="card-actions" [class.edit-actions]="editingId"><button mat-flat-button (click)="add()" [disabled]="!validDraft()"><mat-icon>{{editingId?'✓':'+'}}</mat-icon>{{editingId?'Update Row':'Add material'}}</button>@if(editingId&&canDeleteEditing){<button mat-stroked-button class="danger" (click)="deleteEditing()">Delete Row</button>}@if(editingId){<button mat-stroked-button (click)="cancelEdit()">Cancel</button>}</div>}
 </mat-card-content></mat-card>
 @if(rows.length){<mat-card class="records-card"><mat-card-content><div class="table-scroll"><table mat-table [dataSource]="rows">
   <ng-container matColumnDef="type"><th mat-header-cell *matHeaderCellDef>Type</th><td mat-cell *matCellDef="let r">{{r.materialType}}</td></ng-container>
   <ng-container matColumnDef="material"><th mat-header-cell *matHeaderCellDef>Material</th><td mat-cell *matCellDef="let r">{{r.material}}</td></ng-container>
   <ng-container matColumnDef="quantity"><th mat-header-cell *matHeaderCellDef>Quantity / Unit</th><td mat-cell *matCellDef="let r">{{r.quantity||'—'}} {{r.unit}}</td></ng-container>
-  <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r">@if(!isHead||activeView==='schedule'){<button mat-icon-button (click)="edit(r)"><mat-icon>✎</mat-icon></button>}@if((isHead&&activeView==='schedule')||(!isHead&&!locked(r))){<button mat-icon-button class="danger" (click)="remove(r.id)"><mat-icon>×</mat-icon></button>}</td></ng-container>
+  <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r">@if(isHead&&activeView==='schedule'||canEditResults){<button mat-icon-button (click)="edit(r)"><mat-icon>✎</mat-icon></button>}@if(isHead&&activeView==='schedule'){<button mat-icon-button class="danger" (click)="remove(r.id)"><mat-icon>×</mat-icon></button>}</td></ng-container>
   <tr mat-header-row *matHeaderRowDef="columns"></tr><tr mat-row *matRowDef="let row;columns:columns"></tr>
-</table></div>@if(!isHead||activeView==='schedule'){<div class="card-actions"><button mat-flat-button (click)="save()" [disabled]="cloud.loading()"><mat-icon>✓</mat-icon>{{cloud.loading()?'Saving…':isHead?'Save Schedule':'Save Work'}}</button></div>}</mat-card-content></mat-card>}
+</table></div>@if(isHead&&activeView==='schedule'||canEditResults){<div class="card-actions"><button mat-flat-button (click)="save()" [disabled]="cloud.loading()"><mat-icon>✓</mat-icon>{{cloud.loading()?'Saving…':isHead&&activeView==='schedule'?'Save Schedule':'Save Results'}}</button></div>}</mat-card-content></mat-card>}}

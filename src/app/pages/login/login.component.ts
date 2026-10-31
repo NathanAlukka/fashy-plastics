@@ -13,8 +13,9 @@ import{SearchableSelectComponent}from'../../shared/searchable-select/searchable-
 @Component({standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatInputModule,SearchableSelectComponent],templateUrl:'./login.component.html',styleUrl:'./login.component.scss'})
 export class LoginComponent{
 readonly headName='Fashy';selectedMode:AppMode|null=null;name='';pin='';submitting=false;
-constructor(public auth:AuthService,public data:MockDataService,master:MasterDataService,private router:Router,private route:ActivatedRoute){if(auth.user())void auth.signOut();void master.loadPublicWorkers()}
+constructor(public auth:AuthService,public data:MockDataService,private master:MasterDataService,private router:Router,private route:ActivatedRoute){if(auth.user())void auth.signOut();void master.loadPublicWorkers()}
 get workerNames():string[]{return this.data.workers.filter(name=>name.toLocaleLowerCase()!==this.headName.toLocaleLowerCase())}
+get controllerNames():string[]{return this.data.workers}
 chooseMode(mode:AppMode):void{this.auth.error.set('');this.selectedMode=mode;this.name=mode==='head'?this.headName:'';this.pin=''}
 back():void{this.auth.error.set('');this.selectedMode=null;this.name='';this.pin=''}
 pinInput(value:string):void{this.pin=value.replace(/\D/g,'').slice(0,6)}

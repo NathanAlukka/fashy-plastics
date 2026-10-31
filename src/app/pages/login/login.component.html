@@ -5,17 +5,18 @@
     <p>How would you like to enter?</p>
     <div class="mode-options">
       <button mat-flat-button type="button" (click)="chooseMode('head')"><strong>Head Mode</strong><span>Create schedules and review results</span></button>
+      <button mat-stroked-button type="button" (click)="chooseMode('controller')"><strong>Controller Mode</strong><span>Review and correct daily results</span></button>
       <button mat-stroked-button type="button" (click)="chooseMode('worker')"><strong>Worker Mode</strong><span>View schedules and submit work</span></button>
     </div>
   }@else{
     <button class="back-button" type="button" (click)="back()">‹ Change mode</button>
-    <p class="mode-label">{{selectedMode==='head'?'Head Mode':'Worker Mode'}}</p>
+    <p class="mode-label">{{selectedMode==='head'?'Head Mode':selectedMode==='controller'?'Controller Mode':'Worker Mode'}}</p>
     @if(auth.error()){<div class="login-error">{{auth.error()}}</div>}
     <form (ngSubmit)="submit()">
       @if(selectedMode==='head'){
         <div class="head-greeting"><strong>Fashy,</strong><span>please enter your PIN</span></div>
       }@else{
-        <app-searchable-select [(ngModel)]="name" name="name" [options]="workerNames" label="Worker name" placeholder="Search or select name" panelWidth="310px" required/>
+        <app-searchable-select [(ngModel)]="name" name="name" [options]="selectedMode==='controller'?controllerNames:workerNames" [label]="selectedMode==='controller'?'Controller name':'Worker name'" placeholder="Search or select name" panelWidth="310px" required/>
       }
       <mat-form-field><mat-label>6-digit PIN</mat-label><input matInput type="password" name="pin" [ngModel]="pin" (ngModelChange)="pinInput($event)" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="current-password" required></mat-form-field>
       <button mat-flat-button type="submit" [disabled]="!name||pin.length!==6||submitting">{{submitting?'Checking…':'Enter'}}</button>

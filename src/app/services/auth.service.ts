@@ -22,7 +22,7 @@ export class AuthService{
 
   loginEmailForName(name:string):string{return this.masterData.loginEmailForName(name)}
 
-  async signInWithPin(name:string,pin:string,expectedRole?:'head'|'worker'):Promise<void>{if(!/^\d{6}$/.test(pin)){this.error.set('Enter a six-digit PIN.');throw new Error('Enter a six-digit PIN.')}await this.signIn(this.loginEmailForName(name),pin);if(expectedRole&&this.profile()?.role!==expectedRole){await this.signOut();const message=expectedRole==='head'?'This PIN does not belong to the Head account.':'This account is not registered as a Worker.';this.error.set(message);throw new Error(message)}}
+  async signInWithPin(name:string,pin:string,expectedRole?:'head'|'controller'|'worker'):Promise<void>{if(!/^\d{6}$/.test(pin)){this.error.set('Enter a six-digit PIN.');throw new Error('Enter a six-digit PIN.')}await this.signIn(this.loginEmailForName(name),pin);const role=this.profile()?.role;const allowed=!expectedRole||role===expectedRole||expectedRole==='controller'&&role==='head';if(!allowed){await this.signOut();const message=expectedRole==='head'?'This PIN does not belong to the Head account.':expectedRole==='controller'?'This account is not authorized as a Controller.':'This account is not registered as a Worker.';this.error.set(message);throw new Error(message)}if(expectedRole==='controller'&&role==='head')this.state.setMode('controller')}
 
   async signIn(email:string,password:string):Promise<void>{
     this.error.set('');
@@ -31,7 +31,7 @@ export class AuthService{
       const{signInWithEmailAndPassword}=await import('firebase/auth');
       const credential=await signInWithEmailAndPassword(this.auth!,email.trim(),password);
       await this.applyUser(credential.user);
-      if(!this.profile()){await this.signOut();throw new Error('This account has no Head/Worker profile.')}
+      if(!this.profile()){await this.signOut();throw new Error('This account has no application profile.')}
       if(!this.profile()?.active){await this.signOut();throw new Error('This account is inactive.')}
     }catch(error){const message=this.friendlyError(error);this.error.set(message);throw new Error(message)}
   }
@@ -58,8 +58,8 @@ export class AuthService{
   private async applyUser(user:User|null):Promise<void>{
     this.user.set(user);this.profile.set(null);if(!user||!this.firestore)return;
     const{doc,getDoc}=await import('firebase/firestore');const snapshot=await getDoc(doc(this.firestore,'users',user.uid));
-    if(!snapshot.exists()){this.error.set('Your account has no Head/Worker profile.');return}
-    const data=snapshot.data();const role=data['role']==='head'?'head':'worker';
+    if(!snapshot.exists()){this.error.set('Your account has no application profile.');return}
+    const data=snapshot.data();const role=data['role']==='head'?'head':data['role']==='controller'?'controller':'worker';
     const profile:UserProfile={uid:user.uid,email:user.email??'',displayName:String(data['displayName']??user.email??'User'),role,active:data['active']!==false};
     this.profile.set(profile);this.state.setMode(role);if(profile.active)await this.masterData.load();
   }

@@ -1,0 +1,10 @@
+<div class="multi-control" [class.disabled]="disabled" [style.grid-template-columns]="compact?'minmax(0,1fr)':'minmax(0,1fr) auto'">
+  <div class="selected-names" [attr.aria-label]="selected.length?selected.join(', '):'No workers selected'">@for(worker of selected;track worker){<span>{{worker}}</span>}</div>
+  <button type="button" class="select-button" [style.min-width.px]="compact?42:58" [style.padding]="compact?'0 3px':'0 8px'" [disabled]="disabled" (click)="show()">Select</button>
+</div>
+@if(open){<div class="picker-backdrop" (click)="close()"><section class="picker-sheet" role="dialog" aria-modal="true" aria-label="Select workers" (click)="$event.stopPropagation()">
+  <header><div><strong>{{label}}</strong><span>Select one or more workers</span></div><button type="button" aria-label="Close" (click)="close()">×</button></header>
+  <div class="picker-search"><span>⌕</span><input [(ngModel)]="query" [ngModelOptions]="{standalone:true}" placeholder="Search workers" autocomplete="off" autofocus></div>
+  <div class="picker-results">@for(worker of filtered;track worker){<label><input type="checkbox" [checked]="draft.has(worker)" (change)="toggle(worker)"><span>{{worker}}</span></label>}@empty{<p>No workers found.</p>}</div>
+  <footer><button mat-stroked-button type="button" (click)="clear()">Clear</button><button mat-flat-button type="button" (click)="confirm()">Add Selected</button></footer>
+</section></div>}

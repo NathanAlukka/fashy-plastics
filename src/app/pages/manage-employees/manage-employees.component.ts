@@ -4,16 +4,18 @@ import{MatButtonModule}from'@angular/material/button';
 import{MatFormFieldModule}from'@angular/material/form-field';
 import{MatIconModule}from'@angular/material/icon';
 import{MatInputModule}from'@angular/material/input';
+import{MatSlideToggleModule}from'@angular/material/slide-toggle';
 import{EmployeeAdminService,ManagedEmployee}from'../../services/employee-admin.service';
 
-@Component({standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatIconModule,MatInputModule],templateUrl:'./manage-employees.component.html',styleUrl:'./manage-employees.component.scss'})
+@Component({standalone:true,imports:[FormsModule,MatButtonModule,MatFormFieldModule,MatIconModule,MatInputModule,MatSlideToggleModule],templateUrl:'./manage-employees.component.html',styleUrl:'./manage-employees.component.scss'})
 export class ManageEmployeesComponent{
-  name='';pin='';search='';message='';editing:ManagedEmployee|null=null;editName='';
+  name='';pin='';search='';message='';controllerAccess=false;editing:ManagedEmployee|null=null;editName='';
   constructor(public employees:EmployeeAdminService){void this.load()}
   get activeCount():number{return this.employees.employees().filter(employee=>employee.active).length}
   get filtered():ManagedEmployee[]{const query=this.search.trim().toLocaleLowerCase();return this.employees.employees().filter(employee=>!query||employee.displayName.toLocaleLowerCase().includes(query))}
   pinInput(value:string):void{this.pin=value.replace(/\D/g,'').slice(0,6)}
-  async add():Promise<void>{if(!this.name.trim()||this.pin.length!==6)return;try{await this.employees.add(this.name,this.pin);this.name='';this.pin='';this.show(this.employees.message())}catch{this.show(this.employees.message())}}
+  async add():Promise<void>{if(!this.name.trim()||this.pin.length!==6)return;try{await this.employees.add(this.name,this.pin,this.controllerAccess);this.name='';this.pin='';this.controllerAccess=false;this.show(this.employees.message())}catch{this.show(this.employees.message())}}
+  async toggleController(employee:ManagedEmployee,enabled:boolean):Promise<void>{try{await this.employees.setController(employee,enabled);this.show(this.employees.message())}catch{this.show(this.employees.message())}}
   setUpLogin(employee:ManagedEmployee):void{this.name=employee.displayName;this.pin='';window.scrollTo({top:0,behavior:'smooth'})}
   startEdit(employee:ManagedEmployee):void{this.editing=employee;this.editName=employee.displayName}
   cancelEdit():void{this.editing=null;this.editName=''}

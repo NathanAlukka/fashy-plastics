@@ -1,0 +1,7 @@
+:host{display:block;width:100%;min-width:0;max-width:100%;overflow-x:clip}
+.gala-section{width:calc(100% + 20px);max-width:calc(100% + 20px);min-width:0;overflow:hidden}
+.cycle-scroll{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;scroll-padding-inline:1px}
+.cycle-card{flex:0 0 100%;width:100%;max-width:100%;min-width:0;overflow:hidden}
+.machine,.field-pair,.field-pair>div,.machine app-worker-multi-select,.machine app-searchable-select,.machine mat-form-field{min-width:0;max-width:100%}
+.machine ::ng-deep .multi-control{max-width:100%}
+.machine ::ng-deep .selected-names{max-width:100%;max-height:96px}

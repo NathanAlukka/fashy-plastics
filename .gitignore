@@ -2,6 +2,7 @@
 /dist
 /out-tsc
 /.angular
+/.firebase
 /.idea
 /.vscode
 .DS_Store
