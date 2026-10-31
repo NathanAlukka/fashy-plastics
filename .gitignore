@@ -7,4 +7,5 @@
 /.vscode
 .DS_Store
 npm-debug.log*
+firebase-debug.log*
 /setup/firebase-users.local.csv
