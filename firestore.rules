@@ -5,8 +5,8 @@ service cloud.firestore {
     function profile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
     function active() { return signedIn() && profile().active == true; }
     function isHead() { return active() && profile().role == 'head'; }
-    function isWorker() { return active() && profile().role == 'worker'; }
-    function isController() { return active() && profile().role == 'controller'; }
+    function isWorker() { return active() && (profile().workerAccess == true || !('workerAccess' in profile())); }
+    function isController() { return active() && (profile().controllerAccess == true || (!('controllerAccess' in profile()) && profile().role == 'controller')); }
     function operationalUser() { return isHead() || isController() || isWorker(); }
 
     match /system_health/angular-client { allow read: if resource.data.public == true; allow write: if false; }
@@ -16,10 +16,12 @@ service cloud.firestore {
       allow get: if signedIn() && (request.auth.uid == userId || isHead());
       allow list: if isHead() || (operationalUser() && resource.data.active == true);
       allow create: if isHead() && request.resource.data.uid == userId
-        && request.resource.data.role in ['worker','controller'] && request.resource.data.active == true;
+        && request.resource.data.role in ['worker','controller'] && request.resource.data.active == true
+        && request.resource.data.workerAccess is bool && request.resource.data.controllerAccess is bool;
       allow update: if isHead() && request.resource.data.uid == resource.data.uid
         && resource.data.role in ['worker','controller']
         && request.resource.data.role in ['worker','controller']
+        && request.resource.data.workerAccess is bool && request.resource.data.controllerAccess is bool
         && request.resource.data.email == resource.data.email;
       allow delete: if false;
     }
@@ -123,7 +125,9 @@ service cloud.firestore {
       allow create: if operationalUser()
         && request.resource.data.actorUid == request.auth.uid
         && request.resource.data.actorName == profile().displayName
-        && request.resource.data.actorRole == profile().role
+        && (request.resource.data.actorRole == 'head' && isHead()
+          || request.resource.data.actorRole == 'controller' && isController()
+          || request.resource.data.actorRole == 'worker' && isWorker())
         && request.resource.data.createdAt == request.time
         && request.resource.data.keys().hasOnly(['recordDate','section','action','recordId','previousValue','newValue','details','actorName','actorUid','actorRole','createdAt']);
       allow update, delete: if false;

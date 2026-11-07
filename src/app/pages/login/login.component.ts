@@ -14,8 +14,8 @@ import{SearchableSelectComponent}from'../../shared/searchable-select/searchable-
 export class LoginComponent{
 readonly headName='Fashy';selectedMode:AppMode|null=null;name='';pin='';submitting=false;
 constructor(public auth:AuthService,public data:MockDataService,private master:MasterDataService,private router:Router,private route:ActivatedRoute){if(auth.user())void auth.signOut();void master.loadPublicWorkers()}
-get workerNames():string[]{return this.data.workers.filter(name=>name.toLocaleLowerCase()!==this.headName.toLocaleLowerCase())}
-get controllerNames():string[]{return this.data.workers}
+get workerNames():string[]{const allowed=new Set(this.master.workerModeNames().map(name=>name.toLocaleLowerCase()));return this.data.workers.filter(name=>name.toLocaleLowerCase()!==this.headName.toLocaleLowerCase()&&allowed.has(name.toLocaleLowerCase()))}
+get controllerNames():string[]{const allowed=new Set(this.master.controllerNames().map(name=>name.toLocaleLowerCase()));return this.data.workers.filter(name=>name.toLocaleLowerCase()===this.headName.toLocaleLowerCase()||allowed.has(name.toLocaleLowerCase()))}
 chooseMode(mode:AppMode):void{this.auth.error.set('');this.selectedMode=mode;this.name=mode==='head'?this.headName:'';this.pin=''}
 back():void{this.auth.error.set('');this.selectedMode=null;this.name='';this.pin=''}
 pinInput(value:string):void{this.pin=value.replace(/\D/g,'').slice(0,6)}

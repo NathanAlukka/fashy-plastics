@@ -7,5 +7,5 @@ export interface ProductionSection{id:string;product:string;galaProducts:string[
 export interface ProductionRecord{id:string;date:string;sections:ProductionSection[]}
 export interface IncomingRow{id:string;date:string;material:string;materialType:string;quantity:number;unit:string;source?:AppMode}
 export type AppMode='head'|'controller'|'worker';
-export interface UserProfile{uid:string;email:string;displayName:string;role:AppMode;active:boolean}
+export interface UserProfile{uid:string;email:string;displayName:string;role:AppMode;active:boolean;workerAccess:boolean;controllerAccess:boolean}
 export interface DailySchedule{date:string;work:WipRow[];powder:PowderRow[];output:(ProductionSection|GalaOutputCycle)[];incoming:IncomingRow[];createdByHead:boolean;headSavedAt?:string;workerUpdatedAt?:string}

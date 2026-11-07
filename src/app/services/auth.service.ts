@@ -22,7 +22,7 @@ export class AuthService{
 
   loginEmailForName(name:string):string{return this.masterData.loginEmailForName(name)}
 
-  async signInWithPin(name:string,pin:string,expectedRole?:'head'|'controller'|'worker'):Promise<void>{if(!/^\d{6}$/.test(pin)){this.error.set('Enter a six-digit PIN.');throw new Error('Enter a six-digit PIN.')}await this.signIn(this.loginEmailForName(name),pin);const role=this.profile()?.role;const allowed=!expectedRole||role===expectedRole||expectedRole==='controller'&&role==='head';if(!allowed){await this.signOut();const message=expectedRole==='head'?'This PIN does not belong to the Head account.':expectedRole==='controller'?'This account is not authorized as a Controller.':'This account is not registered as a Worker.';this.error.set(message);throw new Error(message)}if(expectedRole==='controller'&&role==='head')this.state.setMode('controller')}
+  async signInWithPin(name:string,pin:string,expectedRole?:'head'|'controller'|'worker'):Promise<void>{if(!/^\d{6}$/.test(pin)){this.error.set('Enter a six-digit PIN.');throw new Error('Enter a six-digit PIN.')}await this.signIn(this.loginEmailForName(name),pin);const profile=this.profile();const allowed=!expectedRole||expectedRole==='head'&&profile?.role==='head'||expectedRole==='controller'&&profile?.controllerAccess||expectedRole==='worker'&&profile?.workerAccess;if(!allowed){await this.signOut();const message=expectedRole==='head'?'This PIN does not belong to the Head account.':expectedRole==='controller'?'This account is not authorized as a Controller.':'This account is not authorized for Worker Mode.';this.error.set(message);throw new Error(message)}if(expectedRole&&profile){this.profile.set({...profile,role:expectedRole});this.state.setMode(expectedRole)}}
 
   async signIn(email:string,password:string):Promise<void>{
     this.error.set('');
@@ -59,8 +59,8 @@ export class AuthService{
     this.user.set(user);this.profile.set(null);if(!user||!this.firestore)return;
     const{doc,getDoc}=await import('firebase/firestore');const snapshot=await getDoc(doc(this.firestore,'users',user.uid));
     if(!snapshot.exists()){this.error.set('Your account has no application profile.');return}
-    const data=snapshot.data();const role=data['role']==='head'?'head':data['role']==='controller'?'controller':'worker';
-    const profile:UserProfile={uid:user.uid,email:user.email??'',displayName:String(data['displayName']??user.email??'User'),role,active:data['active']!==false};
+    const data=snapshot.data();const storedRole=data['role']==='head'?'head':data['role']==='controller'?'controller':'worker';const workerAccess=typeof data['workerAccess']==='boolean'?data['workerAccess']:true;const controllerAccess=storedRole==='head'||typeof data['controllerAccess']==='boolean'?data['controllerAccess']!==false:storedRole==='controller';const savedMode=this.state.mode();const role=storedRole==='head'&&savedMode!=='controller'?'head':savedMode==='controller'&&controllerAccess?'controller':savedMode==='worker'&&workerAccess?'worker':controllerAccess?'controller':'worker';
+    const profile:UserProfile={uid:user.uid,email:user.email??'',displayName:String(data['displayName']??user.email??'User'),role,active:data['active']!==false,workerAccess,controllerAccess};
     this.profile.set(profile);this.state.setMode(role);if(profile.active)await this.masterData.load();
   }
 
