@@ -59,8 +59,8 @@ export class AuthService{
     this.user.set(user);this.profile.set(null);if(!user||!this.firestore)return;
     const{doc,getDoc}=await import('firebase/firestore');const snapshot=await getDoc(doc(this.firestore,'users',user.uid));
     if(!snapshot.exists()){this.error.set('Your account has no application profile.');return}
-    const data=snapshot.data();const storedRole=data['role']==='head'?'head':data['role']==='controller'?'controller':'worker';const workerAccess=typeof data['workerAccess']==='boolean'?data['workerAccess']:true;const controllerAccess=storedRole==='head'||typeof data['controllerAccess']==='boolean'?data['controllerAccess']!==false:storedRole==='controller';const savedMode=this.state.mode();const role=storedRole==='head'&&savedMode!=='controller'?'head':savedMode==='controller'&&controllerAccess?'controller':savedMode==='worker'&&workerAccess?'worker':controllerAccess?'controller':'worker';
-    const profile:UserProfile={uid:user.uid,email:user.email??'',displayName:String(data['displayName']??user.email??'User'),role,active:data['active']!==false,workerAccess,controllerAccess};
+    const data=snapshot.data();const displayName=String(data['displayName']??user.email??'User');const isFashy=user.email?.trim().toLocaleLowerCase()==='fashy@fashyplastics.app';const storedRole=data['role']==='head'||isFashy?'head':data['role']==='controller'?'controller':'worker';const workerAccess=typeof data['workerAccess']==='boolean'?data['workerAccess']:true;const controllerAccess=storedRole==='head'||typeof data['controllerAccess']==='boolean'?data['controllerAccess']!==false:storedRole==='controller';const savedMode=this.state.mode();const role=storedRole==='head'&&savedMode!=='controller'?'head':savedMode==='controller'&&controllerAccess?'controller':savedMode==='worker'&&workerAccess?'worker':controllerAccess?'controller':'worker';
+    const profile:UserProfile={uid:user.uid,email:user.email??'',displayName,role,active:data['active']!==false,workerAccess,controllerAccess};
     this.profile.set(profile);this.state.setMode(role);if(profile.active)await this.masterData.load();
   }
 
