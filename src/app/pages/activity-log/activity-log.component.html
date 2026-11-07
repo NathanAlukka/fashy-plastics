@@ -6,21 +6,20 @@
 
 @if(logs.loading()){<div class="empty-state">Loading activity…</div>}
 @else{
-  <section class="log-list">
-    @for(entry of logs.entries();track entry.id){
-      <details class="log-entry">
-        <summary><span class="time">{{timestamp(entry.createdAt)|date:'h:mm a'}}</span><strong>{{entry.actorName}}</strong><span class="change">{{entry.action}} · {{entry.section}}</span></summary>
-        <div class="details">
-          <p><strong>When:</strong> {{timestamp(entry.createdAt)|date:'EEEE, d MMMM yyyy, h:mm:ss a'}}</p>
-          <p><strong>Who:</strong> {{entry.actorName}} ({{entry.actorRole}})</p>
-          <p><strong>What:</strong> {{entry.action}} in {{entry.section}}</p>
-          <p><strong>Record:</strong> {{entry.recordId}}</p>
-          <div class="value"><strong>Previous value</strong><pre>{{entry.previousValue|json}}</pre></div>
-          <div class="value"><strong>New value</strong><pre>{{entry.newValue|json}}</pre></div>
-          @if(hasDetails(entry.details)){<div class="value"><strong>Additional details</strong><pre>{{entry.details|json}}</pre></div>}
-        </div>
-      </details>
-    }@empty{<div class="empty-state">No activity was recorded for this date.</div>}
-  </section>
+  @if(logs.entries().length){
+    <section class="table-scroll" aria-label="Activity log table">
+      <table class="log-table">
+        <thead><tr><th>Person</th><th>Time</th><th>Change made</th><th>From</th><th>To</th><th>Technical record</th></tr></thead>
+        <tbody>@for(entry of logs.entries();track entry.id){<tr>
+          <td><strong>{{entry.actorName}}</strong><span>{{entry.actorRole|titlecase}}</span></td>
+          <td>{{timestamp(entry.createdAt)|date:'h:mm:ss a'}}</td>
+          <td>{{change(entry)}}</td>
+          <td class="value-cell">{{formatValue(entry.previousValue)}}</td>
+          <td class="value-cell">{{formatValue(entry.newValue)}}</td>
+          <td><details class="code"><summary>Show code</summary><pre>{{technical(entry)|json}}</pre></details></td>
+        </tr>}</tbody>
+      </table>
+    </section>
+  }@else{<div class="empty-state">No activity was recorded for this date.</div>}
 }
 @if(logs.message()){<p class="log-message">{{logs.message()}}</p>}
